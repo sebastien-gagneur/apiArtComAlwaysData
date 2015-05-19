@@ -38,7 +38,7 @@ $app->response()->header("Content-Type", "application/json");
  */
 
 // GET route
-//GET with authentification /:db/:collection/:name/:pass -> list all articles with tokens
+//GET with authentification /:db/:collection/:admin/:pass/:username/:userpass -> list all articles with tokens
 $app->get(
     '/:db/:collection/:admin/:pass/:username/:userpass',
     function ($db,$collection,$admin,$pass,$username,$userpass) use ($app) {
@@ -47,6 +47,7 @@ $app->get(
         //header("charset=utf-8");
           echo $app->request()->getResourceUri();
         
+          echo("\n");
         $dbhostML = 'ds045679.mongolab.com:45679';
           // Connect to test database
           // users must be read only !
@@ -70,32 +71,20 @@ $app->get(
     }
 );
 
-//GET without authentification /db/article/:id -> list an article with :id
-//GET with authentification /db/article/:id/:name/:pass -> list an article with :id and tokens
 $app->get(
-    '/db/article/:id/:name/:pass',
-    function ($id,$name,$pass) use ($app) {
+    function ($db,$collection,$admin,$pass,$username,$userpass,$id) use ($app) {
           //echo "Un seul article : $id";
           //header("Content-Type: application/json");
           echo $app->request()->getResourceUri();
-          echo "\n";
-          var_dump($app->request()->params());
-          
-          
+          echo("\n");
           $dbhostML = 'ds045679.mongolab.com:45679';
-          $dbnameML = 'artcom';
-          
           // Connect to test database
-          $password = "QMBD35BEI";
           // users must be read only !
-          $usernameAD = "techspeech_db";
-          $usernameML = "root";
           // connect with a given user
-          $m1 = new Mongo("mongodb://${usernameML}:${password}@${dbhostML}/artcom");
-          $db1 = $m1->$dbnameML;
-          if (validAccess($name,$pass))
+          $m1 = new Mongo("mongodb://${admin}:${pass}@${dbhostML}/${db}");
+          if (validAccess($db,$collection,$admin,$pass,$username,$userpass))
           {
-              $collection = $m1->selectDB("artcom")->selectCollection("articles");    // pull a cursor query
+              $collection = $m1->selectDB($db)->selectCollection($collection);    // pull a cursor query
               $myQuery = array("id" => $id);
               $cursor = $collection->find($myQuery);
               echo json_encode(iterator_to_array($cursor));
