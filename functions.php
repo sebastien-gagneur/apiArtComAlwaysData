@@ -1,10 +1,8 @@
 <?php
 
-    function validAccess($db,$collection,$admin,$pass,$username,$userpass) {
+    function validAccess($db,$collection,$admin,$pass,$username,$userpass,$dbhostML) {
         $result = FALSE;
-        $dbhostML = 'ds045679.mongolab.com:45679';
-        $dbnameML = $db;
-        
+
         // Connect to test database
         // users must be read only !
         // connect with a given user

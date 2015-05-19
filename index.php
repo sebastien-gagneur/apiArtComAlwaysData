@@ -59,7 +59,7 @@ $app->get(
           //echo 'base: '.$db1;
           //echo "</br>";
           // select the collection
-        if (validAccess($db,$collection,$admin,$pass,$username,$userpass))
+        if (validAccess($db,$collection,$admin,$pass,$username,$userpass,$dbhostML))
         {
             $collection = $m1->selectDB($db)->selectCollection($collection);    // pull a cursor query
             $cursor = $collection->find();
@@ -83,7 +83,7 @@ $app->get(
           // users must be read only !
           // connect with a given user
           $m1 = new Mongo("mongodb://${admin}:${pass}@${dbhostML}/${db}");
-          if (validAccess($db,$collection,$admin,$pass,$username,$userpass))
+          if (validAccess($db,$collection,$admin,$pass,$username,$userpass,$dbhostML))
           {
               $collection = $m1->selectDB($db)->selectCollection($collection);    // pull a cursor query
               $myQuery = array("id" => $id);
@@ -106,7 +106,7 @@ $app->get(
           // users must be read only !
           // connect with a given user
           $m1 = new Mongo("mongodb://${admin}:${pass}@${dbhostML}/${db}");
-          if (validAccess($db,$collection,$admin,$pass,$username,$userpass))
+          if (validAccess($db,$collection,$admin,$pass,$username,$userpass,$dbhostML))
           {
               $collection = $m1->selectDB($db)->selectCollection($collection);    // pull a cursor query
               $myQuery = array("category" => $category);
@@ -129,7 +129,7 @@ $app->get(
           // users must be read only !
           // connect with a given user
           $m1 = new Mongo("mongodb://${admin}:${pass}@${dbhostML}/${db}");
-          if (validAccess($db,$collection,$admin,$pass,$username,$userpass))
+          if (validAccess($db,$collection,$admin,$pass,$username,$userpass,$dbhostML))
           {
               $collection = $m1->selectDB($db)->selectCollection($collection);    // pull a cursor query
               $mySort = array("rate" => intval($order));
