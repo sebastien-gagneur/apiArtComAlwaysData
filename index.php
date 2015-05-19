@@ -38,11 +38,10 @@ $app->response()->header("Content-Type", "application/json");
  */
 
 // GET route
-//GET without authentification /db/articles -> list all articles
-//GET with authentification /db/articles/:name/:pass -> list all articles with tokens
+//GET with authentification /:db/:collection/:name/:pass -> list all articles with tokens
 $app->get(
-    '/db/articles/:name/:pass',
-    function ($name,$pass) use ($app) {
+    '/:db/:collection/:name/:pass',
+    function ($db,$collection,$name,$pass) use ($app) {
         //echo "tous les articles !";
         //header("Content-Type: application/json");
         //header("charset=utf-8");
@@ -51,7 +50,8 @@ $app->get(
           var_dump($app->request()->params());
         
         $dbhostML = 'ds045679.mongolab.com:45679';
-        $dbnameML = 'artcom';
+        //$dbnameML = 'artcom';
+        $dbnameML = $db;
           
           // Connect to test database
         $password = "QMBD35BEI";
@@ -59,7 +59,7 @@ $app->get(
         $usernameAD = "techspeech_db";
         $usernameML = "root";
           // connect with a given user
-        $m1 = new Mongo("mongodb://${usernameML}:${password}@${dbhostML}/artcom");
+        $m1 = new Mongo("mongodb://${usernameML}:${password}@${dbhostML}/${db}");
           // connect with a default user ?
           //$m1 = new Mongo("mongodb://$dbhostAD");
           //echo 'host: '.$m1;
@@ -70,7 +70,7 @@ $app->get(
           // select the collection
         if (validAccess($name,$pass))
         {
-            $collection = $m1->selectDB("artcom")->selectCollection("articles");    // pull a cursor query
+            $collection = $m1->selectDB($db)->selectCollection($collection);    // pull a cursor query
             $cursor = $collection->find();
             echo json_encode("éèçàë%ùil''l");
             echo json_encode(iterator_to_array($cursor));
