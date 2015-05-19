@@ -46,7 +46,6 @@ $app->get(
         //header("Content-Type: application/json");
         //header("charset=utf-8");
           echo $app->request()->getResourceUri();
-        
           echo("\n");
         $dbhostML = 'ds045679.mongolab.com:45679';
           // Connect to test database
@@ -71,7 +70,9 @@ $app->get(
     }
 );
 
+//GET with authentification /:db/:collection/:admin/:pass/:username/:userpass/id/:id -> list an article with :id and tokens
 $app->get(
+    '/:db/:collection/:admin/:pass/:username/:userpass/id/:id',
     function ($db,$collection,$admin,$pass,$username,$userpass,$id) use ($app) {
           //echo "Un seul article : $id";
           //header("Content-Type: application/json");
@@ -92,28 +93,22 @@ $app->get(
     }
 );
    
-//GET without authentification /db/articles/:category -> list articles by one category
-//GET with authentification /db/articles/:category/:name/:pass -> list articles by one category with tokens
+//GET with authentification /:db/:collection/:admin/:pass/:username/:userpass/category/:category -> list articles by one category with tokens
 $app->get(
-    '/db/articles/:category/:name/:pass',
-    function ($category,$name,$pass) {
+    '/:db/:collection/:admin/:pass/:username/:userpass/category/:category',
+    function ($db,$collection,$admin,$pass,$username,$userpass,$category) use ($app) {
           //echo "Un seul article : $id";
           //header("Content-Type: application/json");
-          
+          echo $app->request()->getResourceUri();
+          echo("\n");
           $dbhostML = 'ds045679.mongolab.com:45679';
-          $dbnameML = 'artcom';
-          
           // Connect to test database
-          $password = "QMBD35BEI";
           // users must be read only !
-          $usernameAD = "techspeech_db";
-          $usernameML = "root";
           // connect with a given user
-          $m1 = new Mongo("mongodb://${usernameML}:${password}@${dbhostML}/artcom");
-          $db1 = $m1->$dbnameML;
-          if (validAccess($name,$pass))
+          $m1 = new Mongo("mongodb://${admin}:${pass}@${dbhostML}/${db}");
+          if (validAccess($db,$collection,$admin,$pass,$username,$userpass))
           {
-              $collection = $m1->selectDB("artcom")->selectCollection("articles");    // pull a cursor query
+              $collection = $m1->selectDB($db)->selectCollection($collection);    // pull a cursor query
               $myQuery = array("category" => $category);
               $cursor = $collection->find($myQuery);
               echo json_encode(iterator_to_array($cursor));
@@ -121,67 +116,29 @@ $app->get(
     }
 );
 
-//GET without authentification /db/articlesorderbyrateasc -> list all articles order by rate, 1 : ASC, -1 : DESC
-//GET with authentification /db/articlesorderbyrateasc/:name/:pass -> list all articles order by rate with tokens
+//GET with authentification /:db/:collection/:admin/:pass/:username/:userpass/articlesorderbyrate/:order -> list all articles order by rate with tokens, order values 1 : ASC, -1 : DESC
 $app->get(
-    '/db/articlesorderbyrateasc/:name/:pass',
-    function ($name,$pass) {
+    '/:db/:collection/:admin/:pass/:username/:userpass/articlesorderbyrate/:order',
+    function ($db,$collection,$admin,$pass,$username,$userpass,$order) use ($app) {
           //echo "Un seul article : $id";
           //header("Content-Type: application/json");
-          
+          echo $app->request()->getResourceUri();
+          echo("\n");
           $dbhostML = 'ds045679.mongolab.com:45679';
-          $dbnameML = 'artcom';
-          
           // Connect to test database
-          $password = "QMBD35BEI";
           // users must be read only !
-          $usernameAD = "techspeech_db";
-          $usernameML = "root";
           // connect with a given user
-          $m1 = new Mongo("mongodb://${usernameML}:${password}@${dbhostML}/artcom");
-          $db1 = $m1->$dbnameML;
-          if (validAccess($name,$pass))
+          $m1 = new Mongo("mongodb://${admin}:${pass}@${dbhostML}/${db}");
+          if (validAccess($db,$collection,$admin,$pass,$username,$userpass))
           {
-              $collection = $m1->selectDB("artcom")->selectCollection("articles");    // pull a cursor query
-              $mySort = array("rate" => 1);
+              $collection = $m1->selectDB($db)->selectCollection($collection);    // pull a cursor query
+              $mySort = array("rate" => intval($order));
               $cursor = $collection->find()->sort($mySort);
               echo json_encode(iterator_to_array($cursor));
           }
     }
 );
   
-//GET without authentification /db/articlesorderbyratedesc -> list all articles order by rate, 1 : ASC, -1 : DESC
-//GET with authentification /db/articlesorderbyratedesc/:name/:pass -> list all articles order by rate with tokens
-$app->get(
-        '/db/articlesorderbyratedesc/:name/:pass',
-        function ($name,$pass) {
-          //echo "Un seul article : $id";
-          //header("Content-Type: application/json");
-          
-          $dbhostAD = 'mongodb-techspeech.alwaysdata.net';
-          $dbhostML = 'ds045679.mongolab.com:45679';
-          $dbnameAD = 'techspeech_artcom';
-          $dbnameML = 'artcom';
-          
-          // Connect to test database
-          $password = "QMBD35BEI";
-          // users must be read only !
-          $usernameAD = "techspeech_db";
-          $usernameML = "root";
-          // connect with a given user
-          $m1 = new Mongo("mongodb://${usernameML}:${password}@${dbhostML}/artcom");
-          $db1 = $m1->$dbnameML;
-          if (validAccess($name,$pass))
-          {
-              $collection = $m1->selectDB("artcom")->selectCollection("articles");    // pull a cursor query
-              $mySort = array("rate" => -1);
-              $cursor = $collection->find()->sort($mySort);
-              echo json_encode(iterator_to_array($cursor));
-          }
-    }
-);
-    
-    
 // POST route
 $app->post(
     '/db/article/:name/:pass',
