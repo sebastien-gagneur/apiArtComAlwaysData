@@ -40,38 +40,30 @@ $app->response()->header("Content-Type", "application/json");
 // GET route
 //GET with authentification /:db/:collection/:name/:pass -> list all articles with tokens
 $app->get(
-    '/:db/:collection/:name/:pass',
-    function ($db,$collection,$name,$pass) use ($app) {
+    '/:db/:collection/:admin/:pass/:username/:userpass',
+    function ($db,$collection,$admin,$pass,$username,$userpass) use ($app) {
         //echo "tous les articles !";
         //header("Content-Type: application/json");
         //header("charset=utf-8");
           echo $app->request()->getResourceUri();
-          echo "\n";
-          var_dump($app->request()->params());
         
         $dbhostML = 'ds045679.mongolab.com:45679';
-        //$dbnameML = 'artcom';
-        $dbnameML = $db;
-          
           // Connect to test database
-        $password = "QMBD35BEI";
           // users must be read only !
-        $usernameAD = "techspeech_db";
-        $usernameML = "root";
           // connect with a given user
-        $m1 = new Mongo("mongodb://${usernameML}:${password}@${dbhostML}/${db}");
+        $m1 = new Mongo("mongodb://${admin}:${pass}@${dbhostML}/${db}");
           // connect with a default user ?
           //$m1 = new Mongo("mongodb://$dbhostAD");
           //echo 'host: '.$m1;
           //echo "</br>";
-        $db1 = $m1->$dbnameML;
           //echo 'base: '.$db1;
           //echo "</br>";
           // select the collection
-        if (validAccess($name,$pass))
+        if (validAccess($db,$collection,$admin,$pass,$username,$userpass))
         {
             $collection = $m1->selectDB($db)->selectCollection($collection);    // pull a cursor query
             $cursor = $collection->find();
+          // juste pour tester l'encodage des caractères ...
             echo json_encode("éèçàë%ùil''l");
             echo json_encode(iterator_to_array($cursor));
         }
