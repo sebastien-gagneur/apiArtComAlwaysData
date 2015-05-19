@@ -141,50 +141,61 @@ $app->get(
   
 // POST route
 $app->post(
-    '/db/article/:name/:pass',
-    function ($user,$pass) use ($app) {
+    '/:db/:collection/:admin/:pass/:username/:userpass',
+    function ($db,$collection,$admin,$pass,$username,$userpass) use ($app) {
            // le problème est que ici l'URL ressemble à ça :
-           // http://techspeech.alwaysdata.net/db/article/seb/seb?name=toto&test=titi
+           // http://techspeech.alwaysdata.net/apiartcom/artcom/articles/admin/9XTN#ztXmFnWH&/seb/seb?id=999&title=PROMO_CHEZ_KIKI&rate=100000
            // donc seb doit s'arrêter au ?, sinon le pass c'est seb?name...
            //$cheminComplet = $app->request()->getPath();
            // var_dump[$_SERVER]; pour debugger les paramètres envoyer
            //echo $_GET["name"]; pour récupérer la valeur de name
+           
+           // LE RATE DOIT ETRE A ZERO PAR DEFAUT
            
            // L'url complète est récupérée
            $cheminComplet = $app->request()->getPath();
            // On enlève tous les paramètres après le Query
            $url = strtok($cheminComplet, '?');
            // On découpe la chaîne suivant les /
-           ///db/article/seb/seb
+           ///:db/:collection/:admin/:pass/:username/:userpass
            $arr = explode('/', $cheminComplet);
-           // la 4 case du tableau est toujours le pass !
-           $pass = $arr[3];
-           //echo ':'. $pass .':';
-           $name = trim(strip_tags($app->request->params('name')));
-           //echo ':' . $name . ':';
-           $test = trim(strip_tags($app->request->params('test')));
-           //echo ':' . $test . ':';
-           $dbhostAD = 'mongodb-techspeech.alwaysdata.net';
+           // la case 8 du tableau est toujours le pass !
+           $userpass = $arr[7];
+           //echo ':'. $userpass .':';
+           
+           //$id = trim(strip_tags($app->request->params('id')));
+           $title = trim(strip_tags($app->request->params('title')));
+           $subtitle = trim(strip_tags($app->request->params('subtitle')));
+           $category = trim(strip_tags($app->request->params('category')));
+           // Le blancs sont gérés sans problème
+           $text = trim(strip_tags($app->request->params('text')));
+           $image = trim(strip_tags($app->request->params('image')));
+           $rate = trim(strip_tags($app->request->params('rate')));
+           
            $dbhostML = 'ds045679.mongolab.com:45679';
-           $dbnameAD = 'techspeech_artcom';
-           $dbnameML = 'artcom';
            $insertOptions = array(
                                   'safe'    => true,
                                   'fsync'   => true,
                                   'timeout' => 10000
                                   );
            // Connect to test database
-           $password = "9XTN#ztXmFnWH&";
-           // users must be read only !
-           $usernameAD = "techspeech_db";
-           $usernameML = "admin";
+           // users must be not read only !
            // connect with a given user
-           $m1 = new Mongo("mongodb://${usernameML}:${password}@${dbhostML}/artcom");
-           $db1 = $m1->$dbnameML;
-           if (validAccess($user,$pass))
+           $m1 = new Mongo("mongodb://${admin}:${pass}@${dbhostML}/${db}");
+           
+           if (validAccess($db,$collection,$admin,$pass,$username,$userpass,$dbhostML))
            {
-            $collection = $m1->selectDB("artcom")->selectCollection("articles");
-            $results = $collection->insert(array('name' => $name, 'test' => $test),$insertOptions);
+            $collection = $m1->selectDB($db)->selectCollection($collection);
+            $results = $collection->insert(array(//'id' => $id,
+                                                 'title' => $title,
+                                                 'subtitle' => $subtitle,
+                                                 'category' => $category,
+                                                 'text' => $text,
+                                                 'image' => $image,
+                                                 'rate' => new MongoInt32($rate),
+                                                 'timestamp' => new MongoTimeStamp(time())),$insertOptions);
+                                                // TIME STAMP ?
+            //permet de voir le id interne généré par mongodb
             //print_r($results);
            }
 
