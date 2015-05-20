@@ -419,8 +419,10 @@ $app->put(
 $app->patch('/patch', function () {
     echo 'This is a PATCH route';
 });
+    
 
-// DELETE an article
+// DELETE with authentification : /:db/:collection/:admin/:pass/:username/:userpass/deleteuser/:id : delete a user with id.
+//http://techspeech.alwaysdata.net/apiartcom/artcom/users/admin/9XTN#ztXmFnWH&/seb/seb/deleteuser/555cdf529b8c9a2e4f8b4586
 $app->delete(
     '/:db/:collection/:admin/:pass/:username/:userpass/deleteuser/:id',
     function ($db,$collection,$admin,$pass,$username,$userpass,$id) use ($app) {
@@ -429,16 +431,10 @@ $app->delete(
              // mise à jour si _id = $id
              $criteria = array('_id' => new MongoId($id));
              // set values title = .... and ...
-             $newdata = array('$set' => array('title' => $title,
-                                              'subtitle' => $subtitle,
-                                              'category' => $category,
-                                              'text' => $text,
-                                              'image' => $image,
-                                              'rate' => new MongoInt32($rate),
-                                              ));
-             // update options : upsert : false pas de création du document si pas trouvé, mise à jour de plusieurs articles si correspondance
-             $updateOptions = array('upsert'=>false,
-                                    'multiple'=>true
+             
+             // remove options : upsert : false pas de création du document si pas trouvé, mise à jour de plusieurs articles si correspondance
+             $removeOptions = array('justOne'=>true,
+                                    'j'=>false
                                     );
              
              // Connect to test database
@@ -449,7 +445,7 @@ $app->delete(
              if (validAccess($db,$collection,$admin,$pass,$username,$userpass,$dbhostML))
              {
              $collection = $m1->selectDB($db)->selectCollection($collection);
-             $results = $collection->update($criteria, $newdata, $updateOptions);
+             $results = $collection->remove($criteria, $removeOptions);
              
              //permet de voir le id interne généré par mongodb
              //print_r($results);
@@ -458,11 +454,37 @@ $app->delete(
     }
 );
 
-// DELETE a user
+// DELETE with authentification : /:db/:collection/:admin/:pass/:username/:userpass/deletearticle/:id : delete an article with id.
+//http://techspeech.alwaysdata.net/apiartcom/artcom/articles/admin/9XTN#ztXmFnWH&/seb/seb/deletearticle/555b6b2f9b8c9a2e4f8b457e
 $app->delete(
-             '/db/article/:id/:name/:pass',
-             function ($id,$name,$pass) {
-             echo 'This is a DELETE route';
+             '/:db/:collection/:admin/:pass/:username/:userpass/deletearticle/:id',
+             function ($db,$collection,$admin,$pass,$username,$userpass,$id) use ($app) {
+             $dbhostML = 'ds045679.mongolab.com:45679';
+             
+             // mise à jour si _id = $id
+             $criteria = array('_id' => new MongoId($id));
+             echo $id;
+             // set values title = .... and ...
+             
+             // remove options : upsert : false pas de création du document si pas trouvé, mise à jour de plusieurs articles si correspondance
+             $removeOptions = array('justOne'=>true,
+                                    'j'=>false
+                                    );
+             
+             // Connect to test database
+             // users must be not read only !
+             // connect with a given user
+             $m1 = new Mongo("mongodb://${admin}:${pass}@${dbhostML}/${db}");
+             
+             if (validAccess($db,$collection,$admin,$pass,$username,$userpass,$dbhostML))
+             {
+             echo 'ok';
+             $collection = $m1->selectDB($db)->selectCollection($collection);
+             $results = $collection->remove($criteria, $removeOptions);
+             
+             //permet de voir le id interne généré par mongodb
+                print_r($results);
+             }
     }
 );
     
