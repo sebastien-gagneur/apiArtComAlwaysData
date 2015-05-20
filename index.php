@@ -139,7 +139,7 @@ $app->get(
     }
 );
   
-// POST route
+// POST with authentification /:db/:collection/:admin/:pass/:username/:userpass -> insert an article in articles collection. Parameters accept blank as value.
 $app->post(
     '/:db/:collection/:admin/:pass/:username/:userpass',
     function ($db,$collection,$admin,$pass,$username,$userpass) use ($app) {
@@ -198,18 +198,115 @@ $app->post(
             //permet de voir le id interne généré par mongodb
             //print_r($results);
            }
-
     }
 );
 
-// PUT route
+// PUT with authentification /:db/:collection/:admin/:pass/:username/:userpass/updatearticles/:id update an article with id set other values if define.
 $app->put(
-    '/db/article/:id/:name/:pass',
-    function ($id,$name,$pass) {
-        echo 'This is a PUT route';
+    '/:db/:collection/:admin/:pass/:username/:userpass/updatearticles/:id',
+    function ($db,$collection,$admin,$pass,$username,$userpass,$id) use ($app) {
+          // L'url complète est récupérée
+          $cheminComplet = $app->request()->getPath();
+          // On enlève tous les paramètres après le Query
+          $url = strtok($cheminComplet, '?');
+          // On découpe la chaîne suivant les /
+          ///:db/:collection/:admin/:pass/:username/:userpass
+          $arr = explode('/', $cheminComplet);
+          // la case 8 du tableau est toujours le pass !
+          $userpass = $arr[7];
+          //echo ':'. $userpass .':';
+          
+          $title = trim(strip_tags($app->request->params('title')));
+          $subtitle = trim(strip_tags($app->request->params('subtitle')));
+          $category = trim(strip_tags($app->request->params('category')));
+          // Le blancs sont gérés sans problème
+          $text = trim(strip_tags($app->request->params('text')));
+          $image = trim(strip_tags($app->request->params('image')));
+          $rate = trim(strip_tags($app->request->params('rate')));
+          
+          $dbhostML = 'ds045679.mongolab.com:45679';
+          $insertOptions = array(
+                                 'safe'    => true,
+                                 'fsync'   => true,
+                                 'timeout' => 10000
+                                 );
+          // Connect to test database
+          // users must be not read only !
+          // connect with a given user
+          $m1 = new Mongo("mongodb://${admin}:${pass}@${dbhostML}/${db}");
+          
+          if (validAccess($db,$collection,$admin,$pass,$username,$userpass,$dbhostML))
+          {
+          echo $id;
+          $identifiant = array('$id' => $id);
+          $identifiant = json_encode($identifiant);
+          $collection = $m1->selectDB($db)->selectCollection($collection);
+          $results = $collection->update(array('_id' => new MongoId($id)), array('$set' => array('title' => $title,
+                                                                                   'subtitle' => $subtitle,
+                                                                                   'category' => $category,
+                                                                                   'text' => $text,
+                                                                                   'image' => $image,
+                                                                                   'rate' => new MongoInt32($rate),
+                                                                                   )));
+          
+          //permet de voir le id interne généré par mongodb
+          print_r($results);
+          }
     }
 );
 
+// PUT with authentification /:db/:collection/:admin/:pass/:username/:userpass/updateusers/:id update a user with id set other values if define.
+$app->put(
+          '/:db/:collection/:admin/:pass/:username/:userpass/updateusers/:id',
+          function ($db,$collection,$admin,$pass,$username,$userpass,$id) use ($app) {
+          // L'url complète est récupérée
+          $cheminComplet = $app->request()->getPath();
+          // On enlève tous les paramètres après le Query
+          $url = strtok($cheminComplet, '?');
+          // On découpe la chaîne suivant les /
+          ///:db/:collection/:admin/:pass/:username/:userpass
+          $arr = explode('/', $cheminComplet);
+          // la case 8 du tableau est toujours le pass !
+          $userpass = $arr[7];
+          //echo ':'. $userpass .':';
+          
+          $title = trim(strip_tags($app->request->params('title')));
+          $subtitle = trim(strip_tags($app->request->params('subtitle')));
+          $category = trim(strip_tags($app->request->params('category')));
+          // Le blancs sont gérés sans problème
+          $text = trim(strip_tags($app->request->params('text')));
+          $image = trim(strip_tags($app->request->params('image')));
+          $rate = trim(strip_tags($app->request->params('rate')));
+          
+          $dbhostML = 'ds045679.mongolab.com:45679';
+          $insertOptions = array(
+                                 'safe'    => true,
+                                 'fsync'   => true,
+                                 'timeout' => 10000
+                                 );
+          // Connect to test database
+          // users must be not read only !
+          // connect with a given user
+          $m1 = new Mongo("mongodb://${admin}:${pass}@${dbhostML}/${db}");
+          
+          if (validAccess($db,$collection,$admin,$pass,$username,$userpass,$dbhostML))
+          {
+          $collection = $m1->selectDB($db)->selectCollection($collection);
+          $results = $collection->update(array('id' => $id), array('$set' => array('title' => $title,
+                                                                                   'subtitle' => $subtitle,
+                                                                                   'category' => $category,
+                                                                                   'text' => $text,
+                                                                                   'image' => $image,
+                                                                                   'rate' => new MongoInt32($rate),
+                                                                                   )));
+          
+          //permet de voir le id interne généré par mongodb
+          print_r($results);
+          }
+    }
+);
+
+    
 // PATCH route
 $app->patch('/patch', function () {
     echo 'This is a PATCH route';
