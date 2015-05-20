@@ -139,12 +139,13 @@ $app->get(
     }
 );
   
-// POST with authentification /:db/:collection/:admin/:pass/:username/:userpass -> insert an article in articles collection. Parameters accept blank as value.
+// POST with authentification /:db/:collection/:admin/:pass/:username/:userpass/insertarticle -> insert an article in articles collection. Parameters accept blank as value.
+// /!\ RATE MUST HAVE A DEFAULT VALUE
 $app->post(
-    '/:db/:collection/:admin/:pass/:username/:userpass',
+    '/:db/:collection/:admin/:pass/:username/:userpass/insertarticle',
     function ($db,$collection,$admin,$pass,$username,$userpass) use ($app) {
            // le problème est que ici l'URL ressemble à ça :
-           // http://techspeech.alwaysdata.net/apiartcom/artcom/articles/admin/9XTN#ztXmFnWH&/seb/seb?id=999&title=PROMO_CHEZ_KIKI&rate=100000
+           // http://techspeech.alwaysdata.net/apiartcom/artcom/articles/admin/9XTN#ztXmFnWH&/seb/seb/insertarticle?title=PROMO CHEZ KAKA&text=il y tout chez kaka&rate=2
            // donc seb doit s'arrêter au ?, sinon le pass c'est seb?name...
            //$cheminComplet = $app->request()->getPath();
            // var_dump[$_SERVER]; pour debugger les paramètres envoyer
@@ -201,7 +202,92 @@ $app->post(
     }
 );
 
+// POST with authentification /:db/:collection/:admin/:pass/:username/:userpass/insertuser -> insert a user in users collection. Parameters accept blank as value.
+// /!\ RATE MUST HAVE A DEFAULT VALUE
+$app->post(
+           '/:db/:collection/:admin/:pass/:username/:userpass/insertuser',
+           function ($db,$collection,$admin,$pass,$username,$userpass) use ($app) {
+           // le problème est que ici l'URL ressemble à ça :
+           // http://techspeech.alwaysdata.net/apiartcom/artcom/users/admin/9XTN#ztXmFnWH&/seb/seb/insertuser?name=toto&password=toto&number=22&street=Rue des Travelles&zip=63870&city=Montrodeix&phone=0473788073&website=techspeech.fr&twitter=@sgagneur&email=toto@toto.fr&role=dealer&rate=1
+           // donc seb doit s'arrêter au ?, sinon le pass c'est seb?name...
+           //$cheminComplet = $app->request()->getPath();
+           // var_dump[$_SERVER]; pour debugger les paramètres envoyer
+           //echo $_GET["name"]; pour récupérer la valeur de name
+           
+           // LE RATE DOIT ETRE A ZERO PAR DEFAUT
+           
+           // L'url complète est récupérée
+           $cheminComplet = $app->request()->getPath();
+           // On enlève tous les paramètres après le Query
+           $url = strtok($cheminComplet, '?');
+           // On découpe la chaîne suivant les /
+           ///:db/:collection/:admin/:pass/:username/:userpass
+           $arr = explode('/', $cheminComplet);
+           // la case 8 du tableau est toujours le pass !
+           $userpass = $arr[7];
+           echo ':'. $userpass .':';
+           
+           $name = trim(strip_tags($app->request->params('name')));
+           $password = trim(strip_tags($app->request->params('password')));
+           $number = trim(strip_tags($app->request->params('number')));
+           $street = trim(strip_tags($app->request->params('street')));
+           $zip = trim(strip_tags($app->request->params('zip')));
+           $city = trim(strip_tags($app->request->params('city')));
+           $phone = trim(strip_tags($app->request->params('phone')));
+           $website = trim(strip_tags($app->request->params('website')));
+           $twitter = trim(strip_tags($app->request->params('twitter')));
+           $facebook = trim(strip_tags($app->request->params('facebook')));
+           $email = trim(strip_tags($app->request->params('email')));
+           $role = trim(strip_tags($app->request->params('role')));
+           $rate = trim(strip_tags($app->request->params('rate')));
+           
+           $dbhostML = 'ds045679.mongolab.com:45679';
+           
+           $data = array('name' => $name,
+                         'pass' => $password,
+                         'number' => $number,
+                         'street' => $street,
+                         'zip' => new MongoInt32($zip),
+                         'city' => $city,
+                         'phone' => $phone,
+                         'website' => $website,
+                         'twitter' => $twitter,
+                         'facebook' => $facebook,
+                         'email' => $email,
+                         'timestamp' => new MongoTimeStamp(time()),
+                         'role' => $role,
+                         'rate' => new MongoInt32($rate),
+                         );
+           
+           $insertOptions = array(
+                                  'safe'    => true,
+                                  'fsync'   => true,
+                                  'timeout' => 10000
+                                  );
+           // Connect to test database
+           // users must be not read only !
+           // connect with a given user
+           $m1 = new Mongo("mongodb://${admin}:${pass}@${dbhostML}/${db}");
+           echo 'avant';
+           if (validAccess($db,$collection,$admin,$pass,$username,$userpass,$dbhostML))
+           {
+           echo 'insert';
+           $collection = $m1->selectDB($db)->selectCollection($collection);
+           $results = $collection->insert($data,$insertOptions);
+           
+           // TIME STAMP ?
+           //permet de voir le id interne généré par mongodb
+           print_r($results);
+           }
+    }
+);
+
+    
+    
 // PUT with authentification /:db/:collection/:admin/:pass/:username/:userpass/updatearticles/:id update an article with id set other values if define.
+// /!\ USING : ALL VALUES MUST BE COMPLETED BECAUSE FIELD WITHOUT VALUE LET BLANK IN DOCUMENT.
+// http://techspeech.alwaysdata.net/apiartcom/artcom/articles/admin/9XTN#ztXmFnWH&/seb/seb/updatearticles/555ca9959b8c9a2e4f8b4580?title=PROMO CHEZ KOKO&subtitle=ca a l'air de marcher&text=pas mal ce truc&rate=1
+    
 $app->put(
     '/:db/:collection/:admin/:pass/:username/:userpass/updatearticles/:id',
     function ($db,$collection,$admin,$pass,$username,$userpass,$id) use ($app) {
@@ -225,11 +311,22 @@ $app->put(
           $rate = trim(strip_tags($app->request->params('rate')));
           
           $dbhostML = 'ds045679.mongolab.com:45679';
-          $insertOptions = array(
-                                 'safe'    => true,
-                                 'fsync'   => true,
-                                 'timeout' => 10000
+          
+          // mise à jour si _id = $id
+          $criteria = array('_id' => new MongoId($id));
+          // set values title = .... and ...
+          $newdata = array('$set' => array('title' => $title,
+                                           'subtitle' => $subtitle,
+                                           'category' => $category,
+                                           'text' => $text,
+                                           'image' => $image,
+                                           'rate' => new MongoInt32($rate),
+                                           ));
+          // update options : upsert : false pas de création du document si pas trouvé, mise à jour de plusieurs articles si correspondance
+          $updateOptions = array('upsert'=>false,
+                                 'multiple'=>true
                                  );
+          
           // Connect to test database
           // users must be not read only !
           // connect with a given user
@@ -237,25 +334,18 @@ $app->put(
           
           if (validAccess($db,$collection,$admin,$pass,$username,$userpass,$dbhostML))
           {
-          echo $id;
-          $identifiant = array('$id' => $id);
-          $identifiant = json_encode($identifiant);
-          $collection = $m1->selectDB($db)->selectCollection($collection);
-          $results = $collection->update(array('_id' => new MongoId($id)), array('$set' => array('title' => $title,
-                                                                                   'subtitle' => $subtitle,
-                                                                                   'category' => $category,
-                                                                                   'text' => $text,
-                                                                                   'image' => $image,
-                                                                                   'rate' => new MongoInt32($rate),
-                                                                                   )));
+            $collection = $m1->selectDB($db)->selectCollection($collection);
+            $results = $collection->update($criteria, $newdata, $updateOptions);
           
-          //permet de voir le id interne généré par mongodb
-          print_r($results);
+            //permet de voir le id interne généré par mongodb
+            //print_r($results);
           }
     }
 );
 
 // PUT with authentification /:db/:collection/:admin/:pass/:username/:userpass/updateusers/:id update a user with id set other values if define.
+// /!\ USING : ALL VALUES MUST BE COMPLETED BECAUSE FIELD WITHOUT VALUE LET BLANK IN DOCUMENT.
+//http://techspeech.alwaysdata.net/apiartcom/artcom/users/admin/9XTN#ztXmFnWH&/seb/seb/updateusers/555cdf0ba9c42fc765b1290b?name=seb&password=seb&number=22&street=Rue des Travelles&zip=63870&city=Montrodeix&phone=0473788073&website=techspeech.fr&twitter=@sgagneur&email=toto@toto.fr&role=admin&rate=99
 $app->put(
           '/:db/:collection/:admin/:pass/:username/:userpass/updateusers/:id',
           function ($db,$collection,$admin,$pass,$username,$userpass,$id) use ($app) {
@@ -270,20 +360,44 @@ $app->put(
           $userpass = $arr[7];
           //echo ':'. $userpass .':';
           
-          $title = trim(strip_tags($app->request->params('title')));
-          $subtitle = trim(strip_tags($app->request->params('subtitle')));
-          $category = trim(strip_tags($app->request->params('category')));
-          // Le blancs sont gérés sans problème
-          $text = trim(strip_tags($app->request->params('text')));
-          $image = trim(strip_tags($app->request->params('image')));
+          $name = trim(strip_tags($app->request->params('name')));
+          $password = trim(strip_tags($app->request->params('password')));
+          $number = trim(strip_tags($app->request->params('number')));
+          $street = trim(strip_tags($app->request->params('street')));
+          $zip = trim(strip_tags($app->request->params('zip')));
+          $phone = trim(strip_tags($app->request->params('phone')));
+          $website = trim(strip_tags($app->request->params('website')));
+          $twitter = trim(strip_tags($app->request->params('twitter')));
+          $facebook = trim(strip_tags($app->request->params('facebook')));
+          $email = trim(strip_tags($app->request->params('email')));
+          $role = trim(strip_tags($app->request->params('role')));
           $rate = trim(strip_tags($app->request->params('rate')));
           
           $dbhostML = 'ds045679.mongolab.com:45679';
-          $insertOptions = array(
-                                 'safe'    => true,
-                                 'fsync'   => true,
-                                 'timeout' => 10000
+          
+          // mise à jour si _id = $id
+          $criteria = array('_id' => new MongoId($id));
+          // set values title = .... and ...
+          $newdata = array('$set' => array('name' => $name,
+                                           'pass' => $password,
+                                           'number' => $number,
+                                           'street' => $street,
+                                           'zip' => $zip,
+                                           'city' => $city,
+                                           'phone' => $phone,
+                                           'website' => $website,
+                                           'twitter' => $twitter,
+                                           'facebook' => $facebook,
+                                           'email' => $email,
+                                           'timestamp' => new MongoTimeStamp(time()),
+                                           'role' => $role,
+                                           'rate' => new MongoInt32($rate),
+                                           ));
+          // update options : upsert : false pas de création du document si pas trouvé, mise à jour de plusieurs articles si correspondance
+          $updateOptions = array('upsert'=>false,
+                                 'multiple'=>true
                                  );
+          
           // Connect to test database
           // users must be not read only !
           // connect with a given user
@@ -292,16 +406,10 @@ $app->put(
           if (validAccess($db,$collection,$admin,$pass,$username,$userpass,$dbhostML))
           {
           $collection = $m1->selectDB($db)->selectCollection($collection);
-          $results = $collection->update(array('id' => $id), array('$set' => array('title' => $title,
-                                                                                   'subtitle' => $subtitle,
-                                                                                   'category' => $category,
-                                                                                   'text' => $text,
-                                                                                   'image' => $image,
-                                                                                   'rate' => new MongoInt32($rate),
-                                                                                   )));
+          $results = $collection->update($criteria, $newdata, $updateOptions);
           
           //permet de voir le id interne généré par mongodb
-          print_r($results);
+          //print_r($results);
           }
     }
 );
@@ -312,14 +420,52 @@ $app->patch('/patch', function () {
     echo 'This is a PATCH route';
 });
 
-// DELETE route
+// DELETE an article
 $app->delete(
-    '/db/article/:id/:name/:pass',
-    function ($id,$name,$pass) {
-        echo 'This is a DELETE route';
+    '/:db/:collection/:admin/:pass/:username/:userpass/deleteuser/:id',
+    function ($db,$collection,$admin,$pass,$username,$userpass,$id) use ($app) {
+             $dbhostML = 'ds045679.mongolab.com:45679';
+             
+             // mise à jour si _id = $id
+             $criteria = array('_id' => new MongoId($id));
+             // set values title = .... and ...
+             $newdata = array('$set' => array('title' => $title,
+                                              'subtitle' => $subtitle,
+                                              'category' => $category,
+                                              'text' => $text,
+                                              'image' => $image,
+                                              'rate' => new MongoInt32($rate),
+                                              ));
+             // update options : upsert : false pas de création du document si pas trouvé, mise à jour de plusieurs articles si correspondance
+             $updateOptions = array('upsert'=>false,
+                                    'multiple'=>true
+                                    );
+             
+             // Connect to test database
+             // users must be not read only !
+             // connect with a given user
+             $m1 = new Mongo("mongodb://${admin}:${pass}@${dbhostML}/${db}");
+             
+             if (validAccess($db,$collection,$admin,$pass,$username,$userpass,$dbhostML))
+             {
+             $collection = $m1->selectDB($db)->selectCollection($collection);
+             $results = $collection->update($criteria, $newdata, $updateOptions);
+             
+             //permet de voir le id interne généré par mongodb
+             //print_r($results);
+             }
+
     }
 );
 
+// DELETE a user
+$app->delete(
+             '/db/article/:id/:name/:pass',
+             function ($id,$name,$pass) {
+             echo 'This is a DELETE route';
+    }
+);
+    
 /**
  * Step 4: Run the Slim application
  *
