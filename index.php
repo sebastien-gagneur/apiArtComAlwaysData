@@ -45,8 +45,7 @@ $app->get(
         //echo "tous les articles !";
         //header("Content-Type: application/json");
         //header("charset=utf-8");
-          echo $app->request()->getResourceUri();
-          echo("\n");
+         // echo $app->request()->getResourceUri();
         $dbhostML = 'ds045679.mongolab.com:45679';
           // Connect to test database
           // users must be read only !
@@ -54,18 +53,26 @@ $app->get(
         $m1 = new Mongo("mongodb://${admin}:${pass}@${dbhostML}/${db}");
           // connect with a default user ?
           //$m1 = new Mongo("mongodb://$dbhostAD");
-          //echo 'host: '.$m1;
-          //echo "</br>";
-          //echo 'base: '.$db1;
-          //echo "</br>";
           // select the collection
         if (validAccess($db,$collection,$admin,$pass,$username,$userpass,$dbhostML))
         {
             $collection = $m1->selectDB($db)->selectCollection($collection);    // pull a cursor query
-            $cursor = $collection->find();
-          // juste pour tester l'encodage des caractères ...
-            echo json_encode("éèçàë%ùil''l");
-            echo json_encode(iterator_to_array($cursor));
+            $articles = $collection->find();
+            $arr = array();
+            foreach($articles as $art)
+            {
+                $temp = array("_id" => $art["_id"],
+                              "title" => $art["title"],
+                              "subtitle" => $art["subtitle"],
+                              "category" => $art["category"],
+                              "text" => $art["text"],
+                              "image" => $art["image"],
+                              "rate" => $art["rate"],
+                              );
+                array_push($arr, $temp);
+            }
+          //echo json_encode($arr);
+          echo '{"articles": ' . json_encode($arr) . '}';
         }
     }
 );
@@ -76,8 +83,8 @@ $app->get(
     function ($db,$collection,$admin,$pass,$username,$userpass,$id) use ($app) {
           //echo "Un seul article : $id";
           //header("Content-Type: application/json");
-          echo $app->request()->getResourceUri();
-          echo("\n");
+          //echo $app->request()->getResourceUri();
+         
           $dbhostML = 'ds045679.mongolab.com:45679';
           // Connect to test database
           // users must be read only !
@@ -99,8 +106,8 @@ $app->get(
     function ($db,$collection,$admin,$pass,$username,$userpass,$category) use ($app) {
           //echo "Un seul article : $id";
           //header("Content-Type: application/json");
-          echo $app->request()->getResourceUri();
-          echo("\n");
+          //echo $app->request()->getResourceUri();
+          
           $dbhostML = 'ds045679.mongolab.com:45679';
           // Connect to test database
           // users must be read only !
@@ -122,8 +129,8 @@ $app->get(
     function ($db,$collection,$admin,$pass,$username,$userpass,$order) use ($app) {
           //echo "Un seul article : $id";
           //header("Content-Type: application/json");
-          echo $app->request()->getResourceUri();
-          echo("\n");
+          //echo $app->request()->getResourceUri();
+          
           $dbhostML = 'ds045679.mongolab.com:45679';
           // Connect to test database
           // users must be read only !
@@ -225,7 +232,7 @@ $app->post(
            $arr = explode('/', $cheminComplet);
            // la case 8 du tableau est toujours le pass !
            $userpass = $arr[7];
-           echo ':'. $userpass .':';
+           //echo ':'. $userpass .':';
            
            $name = trim(strip_tags($app->request->params('name')));
            $password = trim(strip_tags($app->request->params('password')));
@@ -268,16 +275,14 @@ $app->post(
            // users must be not read only !
            // connect with a given user
            $m1 = new Mongo("mongodb://${admin}:${pass}@${dbhostML}/${db}");
-           echo 'avant';
            if (validAccess($db,$collection,$admin,$pass,$username,$userpass,$dbhostML))
            {
-           echo 'insert';
            $collection = $m1->selectDB($db)->selectCollection($collection);
            $results = $collection->insert($data,$insertOptions);
            
            // TIME STAMP ?
            //permet de voir le id interne généré par mongodb
-           print_r($results);
+           //print_r($results);
            }
     }
 );
@@ -463,7 +468,6 @@ $app->delete(
              
              // mise à jour si _id = $id
              $criteria = array('_id' => new MongoId($id));
-             echo $id;
              // set values title = .... and ...
              
              // remove options : upsert : false pas de création du document si pas trouvé, mise à jour de plusieurs articles si correspondance
@@ -478,12 +482,11 @@ $app->delete(
              
              if (validAccess($db,$collection,$admin,$pass,$username,$userpass,$dbhostML))
              {
-             echo 'ok';
              $collection = $m1->selectDB($db)->selectCollection($collection);
              $results = $collection->remove($criteria, $removeOptions);
              
              //permet de voir le id interne généré par mongodb
-                print_r($results);
+                //print_r($results);
              }
     }
 );
