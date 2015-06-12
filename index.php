@@ -146,6 +146,118 @@ $app->get(
     }
 );
   
+    
+//GET with authentification /:db/:collection/:admin/:pass/:username/:userpass/auth -> try authentification with id : 1 = OK, 0 = KO
+$app->get(
+          '/:db/:collection/:admin/:pass/:username/:userpass/auth',
+          function ($db,$collection,$admin,$pass,$username,$userpass) use ($app) {
+          //echo "Un seul article : $id";
+          //header("Content-Type: application/json");
+          //echo $app->request()->getResourceUri();
+          
+          $dbhostML = 'ds045679.mongolab.com:45679';
+          // Connect to test database
+          // users must be read only !
+          // connect with a given user
+          $m1 = new Mongo("mongodb://${admin}:${pass}@${dbhostML}/${db}");
+          if (validAccess($db,$collection,$admin,$pass,$username,$userpass,$dbhostML))
+          {
+            echo json_encode(array("answerAuth" => "1"));
+          }
+          else
+          {
+            echo json_encode(array("answerAuth" => "0"));
+          }
+    }
+);
+    
+//GET with authentification /:db/:collection/:admin/:pass/:username/:userpass/list -> list all users with attributs
+$app->get(
+          '/:db/:collection/:admin/:pass/:username/:userpass/list',
+          function ($db,$collection,$admin,$pass,$username,$userpass) use ($app) {
+          //echo "Un seul article : $id";
+          //header("Content-Type: application/json");
+          //echo $app->request()->getResourceUri();
+          
+          $dbhostML = 'ds045679.mongolab.com:45679';
+          // Connect to test database
+          // users must be read only !
+          // connect with a given user
+          $m1 = new Mongo("mongodb://${admin}:${pass}@${dbhostML}/${db}");
+          if (validAccess($db,$collection,$admin,$pass,$username,$userpass,$dbhostML))
+          {
+              $collection = $m1->selectDB($db)->selectCollection($collection);    // pull a cursor query
+              $articles = $collection->find();
+              $arr = array();
+              foreach($articles as $art)
+              {
+          
+              $temp = array("_id" => $art["_id"],
+                            "name" => $art["name"],
+                            "pass" => $art["pass"],
+                            "number" => $art["number"],
+                            "street" => $art["street"],
+                            "zip" => $art["zip"],
+                            "city" => $art["city"],
+                            "phone" => $art["phone"],
+                            "website" => $art["website"],
+                            "twitter" => $art["twitter"],
+                            "facebook" => $art["facebook"],
+                            "email" => $art["email"],
+                            "timestamp" => $art["timestamp"],
+                            "role" => $art["role"],
+                            "rate" => $art["rate"]
+                            );
+          
+              array_push($arr, $temp);
+              }
+              //echo json_encode($arr);
+              echo '{"users": ' . json_encode($arr) . '}';
+          }
+    }
+);
+
+//GET with authentification /:db/:collection/:admin/:pass/:username/:userpass/user/:name -> list one user with his name
+$app->get(
+          '/:db/:collection/:admin/:pass/:username/:userpass/user/:name',
+          function ($db,$collection,$admin,$pass,$username,$userpass,$name) use ($app) {
+          //echo "Un seul article : $id";
+          //header("Content-Type: application/json");
+          //echo $app->request()->getResourceUri();
+          
+          $dbhostML = 'ds045679.mongolab.com:45679';
+          // Connect to test database
+          // users must be read only !
+          // connect with a given user
+          $m1 = new Mongo("mongodb://${admin}:${pass}@${dbhostML}/${db}");
+          if (validAccess($db,$collection,$admin,$pass,$username,$userpass,$dbhostML))
+          {
+            $collection = $m1->selectDB($db)->selectCollection($collection);    // pull a cursor query
+            $myQuery = array("name" => $name);
+            $user = $collection->findOne($myQuery);
+            $row = array("_id" => $user["_id"],
+                                "name" => $user["name"],
+                                "pass" => $user["pass"],
+                                "number" => $user["number"],
+                                "street" => $user["street"],
+                                "zip" => $user["zip"],
+                                "city" => $user["city"],
+                                "phone" => $user["phone"],
+                                "website" => $user["website"],
+                                "twitter" => $user["twitter"],
+                                "facebook" => $user["facebook"],
+                                "email" => $user["email"],
+                                "timestamp" => $user["timestamp"],
+                                "role" => $user["role"],
+                                "rate" => $user["rate"]
+                                );
+            echo json_encode($row);
+          }
+    }
+);
+    
+
+    
 // POST with authentification /:db/:collection/:admin/:pass/:username/:userpass/insertarticle -> insert an article in articles collection. Parameters accept blank as value.
 // /!\ RATE MUST HAVE A DEFAULT VALUE
 $app->post(
@@ -252,7 +364,7 @@ $app->post(
            
            $data = array('name' => $name,
                          'pass' => $password,
-                         'number' => $number,
+                         'number' => new MongoInt32($number),
                          'street' => $street,
                          'zip' => new MongoInt32($zip),
                          'city' => $city,
@@ -363,13 +475,14 @@ $app->put(
           $arr = explode('/', $cheminComplet);
           // la case 8 du tableau est toujours le pass !
           $userpass = $arr[7];
-          //echo ':'. $userpass .':';
+          echo ':'. $userpass .':';
           
           $name = trim(strip_tags($app->request->params('name')));
           $password = trim(strip_tags($app->request->params('password')));
           $number = trim(strip_tags($app->request->params('number')));
           $street = trim(strip_tags($app->request->params('street')));
           $zip = trim(strip_tags($app->request->params('zip')));
+          $city = trim(strip_tags($app->request->params('city')));
           $phone = trim(strip_tags($app->request->params('phone')));
           $website = trim(strip_tags($app->request->params('website')));
           $twitter = trim(strip_tags($app->request->params('twitter')));
@@ -385,9 +498,9 @@ $app->put(
           // set values title = .... and ...
           $newdata = array('$set' => array('name' => $name,
                                            'pass' => $password,
-                                           'number' => $number,
+                                           'number' => new MongoInt32($number),
                                            'street' => $street,
-                                           'zip' => $zip,
+                                           'zip' => new MongoInt32($zip),
                                            'city' => $city,
                                            'phone' => $phone,
                                            'website' => $website,
@@ -414,7 +527,7 @@ $app->put(
           $results = $collection->update($criteria, $newdata, $updateOptions);
           
           //permet de voir le id interne généré par mongodb
-          //print_r($results);
+          var_dump($results);
           }
     }
 );
