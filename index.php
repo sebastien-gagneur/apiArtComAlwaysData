@@ -68,6 +68,17 @@ $app->get(
                               "text" => $art["text"],
                               "image" => $art["image"],
                               "rate" => $art["rate"],
+                              // complément
+                              "company" => $art["company"],
+                              "number" => $art["number"],
+                              "street" => $art["street"],
+                              "zip" => $art["zip"],
+                              "city" => $art["city"],
+                              "phone" => $art["phone"],
+                              "website" => $art["website"],
+                              "twitter" => $art["twitter"],
+                              "facebook" => $art["facebook"],
+                              "email" => $art["email"],
                               );
                 array_push($arr, $temp);
             }
@@ -147,7 +158,7 @@ $app->get(
 );
   
     
-//GET with authentification /:db/:collection/:admin/:pass/:username/:userpass/auth -> try authentification with id : 1 = OK, 0 = KO
+//GET with authentification /:db/:collection/:admin/:pass/:username/:userpass/auth -> try authentification with id : 1 = OK + role for permissions, 0 = KO
 $app->get(
           '/:db/:collection/:admin/:pass/:username/:userpass/auth',
           function ($db,$collection,$admin,$pass,$username,$userpass) use ($app) {
@@ -162,11 +173,31 @@ $app->get(
           $m1 = new Mongo("mongodb://${admin}:${pass}@${dbhostML}/${db}");
           if (validAccess($db,$collection,$admin,$pass,$username,$userpass,$dbhostML))
           {
-            echo json_encode(array("answerAuth" => "1"));
+            $collection = $m1->selectDB($db)->selectCollection($collection);    // pull a cursor query
+            $myQuery = array("name" => $username);
+            $user = $collection->findOne($myQuery);
+            if ( $user["role"] == null)
+            {
+                $user["role"] = "unknow";
+            }
+            echo json_encode(array("answerAuth" => "1",
+                                   "role" => $user["role"],
+                                   "company" => $user["company"],
+                                   "number" => $user["number"],
+                                   "street" => $user["street"],
+                                   "zip" => $user["zip"],
+                                   "city" => $user["city"],
+                                   "phone" => $user["phone"],
+                                   "website" => $user["website"],
+                                   "twitter" => $user["twitter"],
+                                   "facebook" => $user["facebook"],
+                                   "email" => $user["email"],
+                                   ));
           }
           else
           {
-            echo json_encode(array("answerAuth" => "0"));
+            echo json_encode(array("answerAuth" => "0",
+                                   "role" => "unknow"));
           }
     }
 );
@@ -195,6 +226,7 @@ $app->get(
               $temp = array("_id" => $art["_id"],
                             "name" => $art["name"],
                             "pass" => $art["pass"],
+                            "company" => $art["company"],
                             "number" => $art["number"],
                             "street" => $art["street"],
                             "zip" => $art["zip"],
@@ -238,6 +270,7 @@ $app->get(
             $row = array("_id" => $user["_id"],
                                 "name" => $user["name"],
                                 "pass" => $user["pass"],
+                                "company" => $user["company"],
                                 "number" => $user["number"],
                                 "street" => $user["street"],
                                 "zip" => $user["zip"],
@@ -291,6 +324,19 @@ $app->post(
            $text = trim(strip_tags($app->request->params('text')));
            $image = trim(strip_tags($app->request->params('image')));
            $rate = trim(strip_tags($app->request->params('rate')));
+           // complément
+           $company = trim(strip_tags($app->request->params('company')));
+           $number = trim(strip_tags($app->request->params('number')));
+           $street = trim(strip_tags($app->request->params('street')));
+           $zip = trim(strip_tags($app->request->params('zip')));
+           $city = trim(strip_tags($app->request->params('city')));
+           $phone = trim(strip_tags($app->request->params('phone')));
+           $website = trim(strip_tags($app->request->params('website')));
+           $twitter = trim(strip_tags($app->request->params('twitter')));
+           $facebook = trim(strip_tags($app->request->params('facebook')));
+           $email = trim(strip_tags($app->request->params('email')));
+
+           
            
            $dbhostML = 'ds045679.mongolab.com:45679';
            $insertOptions = array(
@@ -313,8 +359,20 @@ $app->post(
                                                  'text' => $text,
                                                  'image' => $image,
                                                  'rate' => new MongoInt32($rate),
-                                                 'timestamp' => new MongoTimeStamp(time())),$insertOptions);
+                                                 'timestamp' => new MongoTimeStamp(time()),
                                                 // TIME STAMP ?
+                                                //complément
+                                                 'company' => $company,
+                                                'number' => new MongoInt32($number),
+                                                'street' => $street,
+                                                'zip' => new MongoInt32($zip),
+                                                'city' => $city,
+                                                'phone' => $phone,
+                                                'website' => $website,
+                                                'twitter' => $twitter,
+                                                'facebook' => $facebook,
+                                                'email' => $email),$insertOptions);
+           
             //permet de voir le id interne généré par mongodb
             //print_r($results);
            }
@@ -348,6 +406,7 @@ $app->post(
            
            $name = trim(strip_tags($app->request->params('name')));
            $password = trim(strip_tags($app->request->params('password')));
+           $company = trim(strip_tags($app->request->params('company')));
            $number = trim(strip_tags($app->request->params('number')));
            $street = trim(strip_tags($app->request->params('street')));
            $zip = trim(strip_tags($app->request->params('zip')));
@@ -364,6 +423,7 @@ $app->post(
            
            $data = array('name' => $name,
                          'pass' => $password,
+                         'company' => $company,
                          'number' => new MongoInt32($number),
                          'street' => $street,
                          'zip' => new MongoInt32($zip),
@@ -479,6 +539,7 @@ $app->put(
           
           $name = trim(strip_tags($app->request->params('name')));
           $password = trim(strip_tags($app->request->params('password')));
+          $company = trim(strip_tags($app->request->params('company')));
           $number = trim(strip_tags($app->request->params('number')));
           $street = trim(strip_tags($app->request->params('street')));
           $zip = trim(strip_tags($app->request->params('zip')));
@@ -498,6 +559,7 @@ $app->put(
           // set values title = .... and ...
           $newdata = array('$set' => array('name' => $name,
                                            'pass' => $password,
+                                           'company' => $company,
                                            'number' => new MongoInt32($number),
                                            'street' => $street,
                                            'zip' => new MongoInt32($zip),
