@@ -79,6 +79,8 @@ $app->get(
                               "twitter" => $art["twitter"],
                               "facebook" => $art["facebook"],
                               "email" => $art["email"],
+                              "nameauthor" => $art["nameauthor"],
+                              "passauthor" => $art["passauthor"]
                               );
                 array_push($arr, $temp);
             }
@@ -158,7 +160,7 @@ $app->get(
 );
   
     
-//GET with authentification /:db/:collection/:admin/:pass/:username/:userpass/auth -> try authentification with id : 1 = OK + role for permissions, 0 = KO
+//GET with authentification /:db/:collection/:admin/:pass/:username/:userpass/auth -> try authentification with name and pass : 1 = OK + role for permissions, 0 = KO
 $app->get(
           '/:db/:collection/:admin/:pass/:username/:userpass/auth',
           function ($db,$collection,$admin,$pass,$username,$userpass) use ($app) {
@@ -201,6 +203,52 @@ $app->get(
           }
     }
 );
+
+    //GET with authentification /:db/:collection/:admin/:pass/:username/:userpass/auth2 -> try authentification ONLY with name : 1 = OK + role for permissions, 0 = KO
+    // call validAccessSignIn which works only with name and without pass !
+    $app->get(
+              '/:db/:collection/:admin/:pass/:username/:userpass/auth2',
+              function ($db,$collection,$admin,$pass,$username,$userpass) use ($app) {
+              //echo "Un seul article : $id";
+              //header("Content-Type: application/json");
+              //echo $app->request()->getResourceUri();
+              
+              $dbhostML = 'ds045679.mongolab.com:45679';
+              // Connect to test database
+              // users must be read only !
+              // connect with a given user
+              $m1 = new Mongo("mongodb://${admin}:${pass}@${dbhostML}/${db}");
+              if (validAccessSignIn($db,$collection,$admin,$pass,$username,$userpass,$dbhostML))
+              {
+              $collection = $m1->selectDB($db)->selectCollection($collection);    // pull a cursor query
+              $myQuery = array("name" => $username);
+              $user = $collection->findOne($myQuery);
+              if ( $user["role"] == null)
+              {
+              $user["role"] = "unknow";
+              }
+              echo json_encode(array("answerAuth" => "1",
+                                     "role" => $user["role"],
+                                     "company" => $user["company"],
+                                     "number" => $user["number"],
+                                     "street" => $user["street"],
+                                     "zip" => $user["zip"],
+                                     "city" => $user["city"],
+                                     "phone" => $user["phone"],
+                                     "website" => $user["website"],
+                                     "twitter" => $user["twitter"],
+                                     "facebook" => $user["facebook"],
+                                     "email" => $user["email"],
+                                     ));
+              }
+              else
+              {
+              echo json_encode(array("answerAuth" => "0",
+                                     "role" => "unknow"));
+              }
+              }
+              );
+
     
 //GET with authentification /:db/:collection/:admin/:pass/:username/:userpass/list -> list all users with attributs
 $app->get(
@@ -335,6 +383,8 @@ $app->post(
            $twitter = trim(strip_tags($app->request->params('twitter')));
            $facebook = trim(strip_tags($app->request->params('facebook')));
            $email = trim(strip_tags($app->request->params('email')));
+           $nameauthor = trim(strip_tags($app->request->params('nameauthor')));
+           $passauthor = trim(strip_tags($app->request->params('passauthor')));
 
            
            
@@ -371,7 +421,9 @@ $app->post(
                                                 'website' => $website,
                                                 'twitter' => $twitter,
                                                 'facebook' => $facebook,
-                                                'email' => $email),$insertOptions);
+                                                'email' => $email,
+                                                'nameauthor' => $nameauthor,
+                                                'passauthor' => $passauthor),$insertOptions);
            
             //permet de voir le id interne généré par mongodb
             //print_r($results);
@@ -494,7 +546,7 @@ $app->put(
           // set values title = .... and ...
           $newdata = array('$set' => array('title' => $title,
                                            'subtitle' => $subtitle,
-                                           'category' => $category,
+                                           'category' => new MongoInt32($category),
                                            'text' => $text,
                                            'image' => $image,
                                            'rate' => new MongoInt32($rate),
@@ -519,6 +571,83 @@ $app->put(
           }
     }
 );
+    
+$app->put(
+          '/:db/:collection/:admin/:pass/:username/:userpass/updatearticles2/:id',
+          function ($db,$collection,$admin,$pass,$username,$userpass,$id) use ($app) {
+          // L'url complète est récupérée
+          $cheminComplet = $app->request()->getPath();
+          // On enlève tous les paramètres après le Query
+          $url = strtok($cheminComplet, '?');
+          // On découpe la chaîne suivant les /
+          ///:db/:collection/:admin/:pass/:username/:userpass
+          $arr = explode('/', $cheminComplet);
+          // la case 8 du tableau est toujours le pass !
+          $userpass = $arr[7];
+          //echo ':'. $userpass .':';
+          
+//              $title = trim(strip_tags($app->request->params('title')));
+//              $subtitle = trim(strip_tags($app->request->params('subtitle')));
+//              $category = trim(strip_tags($app->request->params('category')));
+//              // Le blancs sont gérés sans problème
+//              $text = trim(strip_tags($app->request->params('text')));
+//              $image = trim(strip_tags($app->request->params('image')));
+//              $rate = trim(strip_tags($app->request->params('rate')));
+          
+          // complément
+          $company = trim(strip_tags($app->request->params('company')));
+          $number = trim(strip_tags($app->request->params('number')));
+          $street = trim(strip_tags($app->request->params('street')));
+          $zip = trim(strip_tags($app->request->params('zip')));
+          $city = trim(strip_tags($app->request->params('city')));
+          $phone = trim(strip_tags($app->request->params('phone')));
+          $website = trim(strip_tags($app->request->params('website')));
+          $twitter = trim(strip_tags($app->request->params('twitter')));
+          $facebook = trim(strip_tags($app->request->params('facebook')));
+          $email = trim(strip_tags($app->request->params('email')));
+          //$nameauthor = trim(strip_tags($app->request->params('nameauthor')));
+          //$passauthor = trim(strip_tags($app->request->params('passauthor')));
+          
+          
+          $dbhostML = 'ds045679.mongolab.com:45679';
+          
+          // mise à jour si _id = $id
+          $criteria = array('_id' => new MongoId($id));
+          // set values title = .... and ...
+          $newdata = array('$set' => array('company' => $company,
+                                           'number' => new MongoInt32($number),
+                                           'street' => $street,
+                                           'zip' => new MongoInt32($zip),
+                                           'city' => $city,
+                                           'phone' => $phone,
+                                           'website' => $website,
+                                           'twitter' => $twitter,
+                                           'facebook' => $facebook,
+                                           'email' => $email,
+                                           //'nameauthor' => $nameauthor,
+                                           //'passauthor' => $passauthor
+                                           ));
+          // update options : upsert : false pas de création du document si pas trouvé, mise à jour de plusieurs articles si correspondance
+          $updateOptions = array('upsert'=>false,
+                                 'multiple'=>true
+                                 );
+          
+          // Connect to test database
+          // users must be not read only !
+          // connect with a given user
+          $m1 = new Mongo("mongodb://${admin}:${pass}@${dbhostML}/${db}");
+          
+          if (validAccess($db,$collection,$admin,$pass,$username,$userpass,$dbhostML))
+          {
+          $collection = $m1->selectDB($db)->selectCollection($collection);
+          $results = $collection->update($criteria, $newdata, $updateOptions);
+          
+          //permet de voir le id interne généré par mongodb
+          //print_r($results);
+          }
+    }
+);
+
 
 // PUT with authentification /:db/:collection/:admin/:pass/:username/:userpass/updateusers/:id update a user with id set other values if define.
 // /!\ USING : ALL VALUES MUST BE COMPLETED BECAUSE FIELD WITHOUT VALUE LET BLANK IN DOCUMENT.
